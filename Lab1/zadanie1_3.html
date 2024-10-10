@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+ 
+ <html>
+     <head>
+         <title>Zadanie 1_3</title>
+         <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+         <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+         <style type="text/css">
+             body {
+
+                 background-color: #000000;
+
+                 overflow: hidden;
+             }
+         </style>
+         <script src="three.js"></script>
+     </head>
+     <body>
+         <div id="WebGLCanvas"> </div>
+ 
+        <script>
+             var scene;
+ 
+             var camera;
+ 
+             var christmasTreeTriangle1;
+
+             var christmasTreeTriangle2;
+             
+             var christmasTreeTriangle3;
+
+             //Geometries
+
+             var squareGeometry = new THREE.Geometry();
+             squareGeometry.vertices.push(new THREE.Vector3(-1.0,  1.0, 0.0));
+             squareGeometry.vertices.push(new THREE.Vector3( 1.0,  1.0, 0.0));
+             squareGeometry.vertices.push(new THREE.Vector3( 1.0, -1.0, 0.0));
+             squareGeometry.vertices.push(new THREE.Vector3(-1.0, -1.0, 0.0));
+             squareGeometry.faces.push(new THREE.Face3(0, 1, 2));
+             squareGeometry.faces.push(new THREE.Face3(0, 2, 3));
+
+             var triangleGeometry = new THREE.Geometry();
+             triangleGeometry.vertices.push(new THREE.Vector3( 0.0,  1.5, 0.0));
+             triangleGeometry.vertices.push(new THREE.Vector3(-1.5, -1.5, 0.0));
+             triangleGeometry.vertices.push(new THREE.Vector3( 1.5, -1.5, 0.0));
+             triangleGeometry.faces.push(new THREE.Face3(0, 1, 2));
+
+             //Materials
+
+             var blueMaterial = new THREE.MeshBasicMaterial({
+                 color: 0x69f0e2,
+                 side: THREE.DoubleSide
+             });
+
+             var whiteMaterial = new THREE.MeshBasicMaterial({
+                 color:0xebe2da,
+                 side:THREE.DoubleSide
+             });
+
+
+             var redMaterial = new THREE.MeshBasicMaterial({
+                color:0xc40606,
+                side:THREE.DoubleSide
+             });
+
+
+             var brownMaterial = new THREE.MeshBasicMaterial({
+                color: 0xbd8346,
+                side: THREE.DoubleSide
+              });
+
+
+              var greenMaterial = new THREE.MeshBasicMaterial({
+                color:0x36a832,
+                side:THREE.DoubleSide
+             });
+
+             var blackMaterial = new THREE.MeshBasicMaterial({
+                color: 0x000,
+                side: THREE.DoubleSide
+             })
+
+             initializeScene();
+ 
+             drawChristmasTree();
+
+             drawHouse();
+
+             drawCar();
+
+             animateScene();
+
+             function initializeScene(){
+                 
+                 renderer = new THREE.WebGLRenderer({antialias:true});
+                  
+                 renderer.setClearColor(0x000000, 1);
+ 
+                 canvasWidth = window.innerWidth;
+                 canvasHeight = window.innerHeight;
+ 
+                 renderer.setSize(canvasWidth, canvasHeight);
+
+                 document.getElementById("WebGLCanvas").appendChild(renderer.domElement);
+
+                 scene = new THREE.Scene();
+ 
+                 camera = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 1, 100);
+                 camera.position.set(0, 1, 11);
+                 //camera.lookAt(scene.position);
+                 scene.add(camera);
+            }
+            
+            function drawHouse(){
+
+                var xpos = 7.0
+    
+                var wallMesh = new THREE.Mesh(squareGeometry, whiteMaterial);
+                wallMesh.position.set(xpos, -1, -2.0);
+                wallMesh.scale.set(2.0, 2.0, 1.0);
+                scene.add(wallMesh);
+                    
+                var roofMesh = new THREE.Mesh(triangleGeometry, redMaterial);
+                roofMesh.position.set(xpos, 2.5, -2.0);
+                roofMesh.scale.set(2.0, 1.0, 1.0);
+                scene.add(roofMesh);
+
+                var window1 = new THREE.Mesh(squareGeometry, blueMaterial);
+                window1.position.set(xpos - 1.0, -0.1, -1.99);
+                window1.scale.set(0.6, 0.6, 1.0);
+                scene.add(window1);
+
+                var window2 = new THREE.Mesh(squareGeometry, blueMaterial);
+                window2.position.set(xpos + 1.0, -0.1, -1.99);
+                window2.scale.set(0.6, 0.6, 1.0);
+                scene.add(window2);
+
+                var doorMesh = new THREE.Mesh(squareGeometry, brownMaterial);
+                doorMesh.position.set(xpos, -2.1, -2.0);
+                doorMesh.scale.set(0.7, 0.9, 1.0)
+                scene.add(doorMesh)
+
+            }
+            
+            function drawChristmasTree() {
+                var xpos = -7.0
+
+                var squareMesh = new THREE.Mesh(squareGeometry, brownMaterial);
+                squareMesh.position.set(xpos, -2.3, -2.0);
+                squareMesh.scale.set(0.4, 0.8, 1.0);
+                scene.add(squareMesh);
+                   
+                christmasTreeTriangle1 = new THREE.Mesh(triangleGeometry, greenMaterial);
+                christmasTreeTriangle1.position.set(xpos, 0, -2.0);
+                scene.add(christmasTreeTriangle1);
+                   
+                christmasTreeTriangle2 = new THREE.Mesh(triangleGeometry, greenMaterial);
+                christmasTreeTriangle2.position.set(xpos, 2, -2.0);
+                scene.add(christmasTreeTriangle2);
+   
+                christmasTreeTriangle3 = new THREE.Mesh(triangleGeometry, greenMaterial);
+                christmasTreeTriangle3.position.set(xpos, 4, -2.0);
+                scene.add(christmasTreeTriangle3);
+             }
+
+             function drawCar(){
+              
+                var bodyMesh = new THREE.Mesh(squareGeometry, redMaterial);
+                bodyMesh.position.set(0.0, -2.0, -2.0);
+                bodyMesh.scale.set(2.5, 1.0, 1.0);
+                scene.add(bodyMesh);
+
+                var wheelGeometry = new THREE.CircleGeometry( 5, 32 );
+                
+                var wheelMesh = new THREE.Mesh(wheelGeometry, blackMaterial);
+                wheelMesh.position.set(0.0, -2.0, -2.0);
+                scene.add(wheelMesh);
+                
+             }
+
+             function animateScene(){
+               
+                christmasTreeTriangle1.rotation.y += 0.05;
+
+                christmasTreeTriangle2.rotation.y -= 0.05;
+
+                christmasTreeTriangle3.rotation.y += 0.05;
+
+               requestAnimationFrame(animateScene);
+
+               renderScene();
+
+           }
+
+             function renderScene(){
+                 renderer.render(scene, camera);
+             }
+
+         </script>
+     </body>
+</html>
