@@ -24,10 +24,22 @@
              var camera;
  
              var christmasTreeTriangle1;
-
              var christmasTreeTriangle2;
-             
              var christmasTreeTriangle3;
+
+             var carAxisMesh;
+
+             var wheelMesh1;
+
+             var wheelMesh2;
+
+             var christmasTreeAxisMesh;
+
+             var cubeMesh;
+             var christmasTreeCone1;
+             var christmasTreeCone2;
+             var christmasTreeCone3;
+             
 
              //Geometries
 
@@ -44,6 +56,10 @@
              triangleGeometry.vertices.push(new THREE.Vector3(-1.5, -1.5, 0.0));
              triangleGeometry.vertices.push(new THREE.Vector3( 1.5, -1.5, 0.0));
              triangleGeometry.faces.push(new THREE.Face3(0, 1, 2));
+            
+             var pyramidGeometry = new THREE.CylinderGeometry(0.0, 1.5, 1.5, 4, false);
+
+             var cubeGeometry = new THREE.CubeGeometry(1.5, 1.5, 1.5); 
 
              //Materials
 
@@ -75,10 +91,44 @@
                 side:THREE.DoubleSide
              });
 
-             var blackMaterial = new THREE.MeshBasicMaterial({
-                color: 0x000,
+             var greyMaterial = new THREE.MeshBasicMaterial({
+                color: 0x4d4d4d,
                 side: THREE.DoubleSide
              })
+
+             for(i = 0; i < pyramidGeometry.faces.length; i++){ 
+                if(pyramidGeometry.faces[i] instanceof THREE.Face4){ 
+                    pyramidGeometry.faces[i].vertexColors[0] = new THREE.Color(0x5CE103); 
+                    if((i % 2) == 0){ 
+                        pyramidGeometry.faces[i].vertexColors[1] = new THREE.Color(0x59D104); 
+                        pyramidGeometry.faces[i].vertexColors[2] = new THREE.Color(0x77BA47); 
+                    } else { 
+                        pyramidGeometry.faces[i].vertexColors[1] = new THREE.Color(0x1AB136); 
+                        pyramidGeometry.faces[i].vertexColors[2] = new THREE.Color(0x259038); 
+                    } 
+                    pyramidGeometry.faces[i].vertexColors[3] = new THREE.Color(0x95F067); 
+                } else { 
+                    pyramidGeometry.faces[i].vertexColors[0] = new THREE.Color(0x3FB702); 
+                    pyramidGeometry.faces[i].vertexColors[1] = new THREE.Color(0x65FD18); 
+                    pyramidGeometry.faces[i].vertexColors[2] = new THREE.Color(0x83BF0D); 
+                } 
+             } 
+
+             var pyramidMaterial = new THREE.MeshBasicMaterial({ 
+                vertexColors:THREE.VertexColors, 
+                side:THREE.DoubleSide 
+             });
+
+             var cubeMaterials = [ 
+             new THREE.MeshBasicMaterial({color:0x7C4A15}),
+             new THREE.MeshBasicMaterial({color:0x7C4A15}),
+             new THREE.MeshBasicMaterial({color:0x7C4A15}),
+             new THREE.MeshBasicMaterial({color:0x7C4A15}),
+             new THREE.MeshBasicMaterial({color:0x7C4A15}),
+             new THREE.MeshBasicMaterial({color:0x7C4A15}) 
+             ]; 
+
+             var cubeMaterial = new THREE.MeshFaceMaterial(cubeMaterials); 
 
              initializeScene();
  
@@ -87,6 +137,8 @@
              drawHouse();
 
              drawCar();
+
+             draw3DChristmasTree();
 
              animateScene();
 
@@ -106,7 +158,7 @@
                  scene = new THREE.Scene();
  
                  camera = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 1, 100);
-                 camera.position.set(0, 1, 11);
+                 camera.position.set(0, 1, 14);
                  //camera.lookAt(scene.position);
                  scene.add(camera);
             }
@@ -165,18 +217,58 @@
 
              function drawCar(){
               
+                var wheelGeometry = new THREE.CircleGeometry();
+
+                var CarAxisGeometry = new THREE.BoxGeometry(1, 1, 1);
+                var CarAxisMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0 });
+                carAxisMesh = new THREE.Mesh(CarAxisGeometry, CarAxisMaterial);
+                scene.add(carAxisMesh);
+
                 var bodyMesh = new THREE.Mesh(squareGeometry, redMaterial);
                 bodyMesh.position.set(0.0, -2.0, -2.0);
-                bodyMesh.scale.set(2.5, 1.0, 1.0);
-                scene.add(bodyMesh);
-
-                var wheelGeometry = new THREE.CircleGeometry( 5, 32 );
+                bodyMesh.scale.set(2.5, 0.5, 1.0);
+                carAxisMesh.add(bodyMesh);
                 
-                var wheelMesh = new THREE.Mesh(wheelGeometry, blackMaterial);
-                wheelMesh.position.set(0.0, -2.0, -2.0);
-                scene.add(wheelMesh);
+                wheelMesh1 = new THREE.Mesh(wheelGeometry, greyMaterial);
+                wheelMesh1.position.set(-1.7, -2.5, -2.0);
+                wheelMesh1.scale.set(0.5, 0.5, 0.5)
+                carAxisMesh.add(wheelMesh1);
+
+                wheelMesh2 = new THREE.Mesh(wheelGeometry, greyMaterial);
+                wheelMesh2.position.set(1.7, -2.5, -2.0);
+                wheelMesh2.scale.set(0.5, 0.5, 0.5)
+                carAxisMesh.add(wheelMesh2);
                 
              }
+
+             function draw3DChristmasTree(){
+                var xpos = 0.0
+    
+                var christmasTreeAxisGeometry = new THREE.BoxGeometry(1, 1, 1);
+                var christmasTreeAxisMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0 });
+                christmasTreeAxisMesh = new THREE.Mesh(christmasTreeAxisGeometry, christmasTreeAxisMaterial);
+                christmasTreeAxisMesh.position.set(xpos, 2.0, -2.0);
+                scene.add(christmasTreeAxisMesh);
+
+                cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial); 
+                cubeMesh.position.set(xpos, 0.0, -2.0); 
+                cubeMesh.scale.set(0.5, 1.0, 0.5);
+                christmasTreeAxisMesh.add(cubeMesh); 
+
+                christmasTreeCone1 = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
+                christmasTreeCone1.position.set(xpos, 1.0, -2.0);
+                christmasTreeAxisMesh.add(christmasTreeCone1);
+
+                christmasTreeCone2 = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
+                christmasTreeCone2.position.set(xpos, 2.0, -2.0);
+                christmasTreeAxisMesh.add(christmasTreeCone2);
+
+                christmasTreeCone3 = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
+                christmasTreeCone3.position.set(xpos, 3.0, -2.0);
+                christmasTreeAxisMesh.add(christmasTreeCone3);
+                    
+            }
+
 
              function animateScene(){
                
@@ -185,6 +277,21 @@
                 christmasTreeTriangle2.rotation.y -= 0.05;
 
                 christmasTreeTriangle3.rotation.y += 0.05;
+
+                wheelMesh1.rotation.z += 0.2;
+                wheelMesh2.rotation.z += 0.2;
+
+                carAxisMesh.rotation.z -= - 0.05;
+
+                christmasTreeCone1.rotation.y += 0.05;
+                christmasTreeCone2.rotation.y += 0.05;
+                christmasTreeCone3.rotation.y += 0.05;
+                cubeMesh.rotation.y += 0.05;
+
+                christmasTreeAxisMesh.rotation.x += 0.01;
+                //christmasTreeAxisMesh.rotation.x += 0.02;
+        
+                //christmasTreeAxisMesh.rotation.y -= 0.05;
 
                requestAnimationFrame(animateScene);
 
