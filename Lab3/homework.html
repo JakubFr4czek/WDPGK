@@ -4,7 +4,23 @@
 		<title>Reflection (Three.js) Example 04 05</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link rel=stylesheet href="css/base.css"/>
+		<link rel="stylesheet" href="css/base.css"/>
+		<style>
+			html, body {
+				margin: 0;
+				padding: 0;
+				overflow: hidden;
+				height: 100%;
+			}
+
+			#ThreeJS {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+				left: 0;
+				top: 0;
+			}
+		</style>
 	</head>
 	<body>
 
@@ -17,19 +33,6 @@
 	<script src="THREEx.KeyboardState.js"></script>
 	<script src="THREEx.FullScreen.js"></script>
 	<script src="THREEx.WindowResize.js"></script>
-
-	<!-- jQuery code to display an information button and box when clicked. -->
-	<script src="jquery-1.9.1.js"></script>
-	<script src="jquery-ui.js"></script>
-	<link rel=stylesheet href="jquery-ui.css" />
-	<link rel=stylesheet href="info.css"/>
-	<script src="info.js"></script>
-	<div id="infoButton"></div>
-	<div id="infoBox" title="Demo Information">
-	This three.js demo is part of a collection at
-	<a href="http://stemkoski.github.io/Three.js/">http://stemkoski.github.io/Three.js/</a>
-	</div>
-	<!-- ------------------------------------------------------------ -->
 
 	<div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
 	<script>
@@ -56,6 +59,13 @@
 	var spheres_pivot;
 
 	var polyhedron1;
+	var sphere2;
+	var sphere3;
+	var sphere4;
+
+	var mirrorCube, mirrorCubeCamera; 
+
+	var satelite_pivot;
 
 	init();
 	animate();
@@ -71,7 +81,7 @@
 		var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
 		camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
 		scene.add(camera);
-		camera.position.set(0,150,400);
+		camera.position.set(0,150,800);
 		camera.lookAt(scene.position);	
 
 		// RENDERER
@@ -101,28 +111,15 @@
 		var light = new THREE.PointLight(0xffffff);
 		light.position.set(0,250,0);
 		scene.add(light);
-		
-		// FLOOR
-		/*
-		var floorTexture = new THREE.TextureLoader().load( 'textures/stone.jpg' );
-		floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
-		floorTexture.repeat.set( 5, 5 );
-		var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side:THREE.BackSide } );
-		var floorGeometry = new THREE.PlaneGeometry(1000, 1000, 10, 10);
-		var floor = new THREE.Mesh(floorGeometry, floorMaterial);
-		floor.position.y = -0.5;
-		floor.rotation.x = Math.PI / 2;
-		scene.add(floor);
-		*/
 
 		// SKYBOX/FOG
 		var materialArray = [];
-		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'my_textures/px.png' ) }));
-		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'my_textures/nx.png' ) }));
-		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'my_textures/py.png' ) }));
-		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'my_textures/ny.png' ) }));
-		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'my_textures/pz.png' ) }));
-		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'my_textures/nz.png' ) }));
+		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/px.png' ) }));
+		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/nx.png' ) }));
+		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/py.png' ) }));
+		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/ny.png' ) }));
+		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/pz.png' ) }));
+		materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'textures/nz.png' ) }));
 		for (var i = 0; i < 6; i++)
 		materialArray[i].side = THREE.BackSide;
 		var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
@@ -141,46 +138,127 @@
 		scene.add(spheres_pivot);
 
 		// Mirror sphere 1
-		mirrorSphereCamera1 = new THREE.CubeCamera( 0.1, 5000, 512 );
+		mirrorSphereCamera1 = new THREE.CubeCamera( 0.2, 6000, 1024 ); // near – minimalna odległość renderowania, far -maksymalna odległość renderowania, resolution – rozdzielczość renderowanych tekstur
 		spheres_pivot.add( mirrorSphereCamera1 );
 		var sphereGeom =  new THREE.SphereGeometry( 50, 32, 16 );
 		var mirrorSphereMaterial1 = new THREE.MeshBasicMaterial( { envMap: mirrorSphereCamera1.renderTarget } );
 		mirrorSphere1 = new THREE.Mesh( sphereGeom, mirrorSphereMaterial1 );
-		mirrorSphere1.position.set(-100,0,0);
+		mirrorSphere1.position.set(-120,0,0);
 		//mirrorSphereCamera.position = mirrorSphere.position;
-		mirrorSphereCamera1.position.set(-100,0,0);
+		mirrorSphereCamera1.position.set(-120,0,0);
 		spheres_pivot.add(mirrorSphere1);
 
 		// Mirror sphere 2
-		mirrorSphereCamera2 = new THREE.CubeCamera( 0.1, 5000, 512 );
+		mirrorSphereCamera2 = new THREE.CubeCamera( 0.2, 6000, 1024 ); // near – minimalna odległość renderowania, far -maksymalna odległość renderowania, resolution – rozdzielczość renderowanych tekstur
 		spheres_pivot.add( mirrorSphereCamera2 );
 		var sphereGeom =  new THREE.SphereGeometry( 50, 32, 16 );
 		var mirrorSphereMaterial2 = new THREE.MeshBasicMaterial( { envMap: mirrorSphereCamera2.renderTarget } );
 		mirrorSphere2 = new THREE.Mesh( sphereGeom, mirrorSphereMaterial2 );
-		mirrorSphere2.position.set(100,0,0);
+		mirrorSphere2.position.set(120,0,0);
 		//mirrorSphereCamera.position = mirrorSphere.position;
-		mirrorSphereCamera2.position.set(100,0,0);
+		mirrorSphereCamera2.position.set(120,0,0);
 		spheres_pivot.add(mirrorSphere2);
 
 		// ------ DEFAULT ROCK ------
 		polyhedron1 = createMesh(new THREE.IcosahedronGeometry(10, 0), "metal-rust.jpg");
-        polyhedron1.position.x = 12;
-        scene.add(polyhedron1);
+        polyhedron1.position.x = 100;
+        mirrorSphere1.add(polyhedron1);
+
+		// ------ BUMP ROCK ------
+		sphere2 = createBumpMesh(new THREE.SphereGeometry( 10, 32, 16 ), "stone.jpg", "stone-bump.jpg");
+        sphere2.position.x = -100;
+        mirrorSphere1.add(sphere2);
+
+		// ------ NORMAL ROCK ------
+		sphere3 = createNormalMesh(new THREE.SphereGeometry( 10, 32, 16 ), "plaster.jpg", "plaster-normal.jpg");
+		sphere3.position.x = 100;
+		mirrorSphere2.add(sphere3);
+
+		// ------- TRANSPARENT ROCK ------
+        var sphere4Geometry = new THREE.SphereGeometry( 10, 32, 16 );
+        var sphere4Material = new THREE.MeshBasicMaterial( { opacity:0.4, color: 0x000000, transparent:true } );
+        sphere4 = new THREE.Mesh(sphere4Geometry, sphere4Material);
+        sphere4.receiveShadow = false;
+        sphere4.castShadow = false;
+        sphere4.position.x = -100;
+
+        mirrorSphere2.add(sphere4);
+
+		// ------ SETELITE PIVOT ------
+		satelite_pivot = new THREE.Object3D();
+		satelite_pivot.position.set(0, 0, 0);
+		scene.add(satelite_pivot);
+
+		// ------ CUBE OLD ------
+		var cubeGeom = new THREE.CubeGeometry(100, 200, 10, 1, 1, 1);
+		mirrorCubeCamera = new THREE.CubeCamera( 0.2, 6000, 1024 );  // near – minimalna odległość renderowania, far -maksymalna odległość renderowania, resolution – rozdzielczość renderowanych tekstur
+		scene.add( mirrorCubeCamera );
+		var mirrorCubeMaterial = new THREE.MeshBasicMaterial( { envMap: mirrorCubeCamera.renderTarget } );
+		mirrorCube = new THREE.Mesh( cubeGeom, mirrorCubeMaterial );
+		mirrorCube.position.set(-75,50,-400);
+		mirrorCubeCamera.position.set(-75,50,-400);
+		satelite_pivot.add(mirrorCube);	
+
+		// ------ CUBE NEW -------
+		var cubeGeom2 = new THREE.CubeGeometry(100, 200, 10, 10, 10, 10);
+		mirrorCubeCamera2 = new THREE.CubeCamera( 0.2, 6000, 1024 ); // near – minimalna odległość renderowania, far -maksymalna odległość renderowania, resolution – rozdzielczość renderowanych tekstur
+		scene.add( mirrorCubeCamera2 );
+		mirrorCube2 = new THREE.Mesh( cubeGeom2, mirrorCubeMaterial );
+		mirrorCube2.position.set(75,50,-400);
+		mirrorCubeCamera2.position.set(75,50,-400);
+		satelite_pivot.add(mirrorCube2);	
+
+		// ------- CUBE LINK ------
+        var linkGeometry = new THREE.CubeGeometry(50, 50, 10, 1, 1, 1);
+        var linkMaterial = new THREE.MeshBasicMaterial( { opacity:1.0, color: 0x000000, transparent:false } );
+        link = new THREE.Mesh(linkGeometry, linkMaterial);
+        link.receiveShadow = false;
+        link.castShadow = false;
+        link.position.set(0, 50, -400);
+
+        satelite_pivot.add(link);
+
 
 
 	}
 
 	function createMesh(geom, imageFile) {
             var texture = new THREE.TextureLoader().load("textures/" + imageFile);
-			//var texture = THREE.ImageUtils.loadTexture("textures/" + imageFile)
-			//texture.wrapS = THREE.RepeatWrapping; 
-			//texture.wrapT = THREE.RepeatWrapping; 
+
 			texture.repeat.set( 1, 1 );
             var mat = new THREE.MeshPhongMaterial();
             mat.map = texture;
 
             var mesh = new THREE.Mesh(geom, mat);
             return mesh;
+    }
+
+	function createBumpMesh(geom, imageFile, bump) {
+		var texture = THREE.ImageUtils.loadTexture("textures/" + imageFile)
+		geom.computeVertexNormals();
+		var mat = new THREE.MeshPhongMaterial();
+		mat.map = texture;
+
+		var bump = THREE.ImageUtils.loadTexture("textures/" + bump)
+		mat.bumpMap = bump;
+		mat.bumpScale = 1.0;
+		console.log('d');
+
+		// create a multimaterial
+		var mesh = new THREE.Mesh(geom, mat);
+
+		return mesh;
+	}
+
+	function createNormalMesh(geom, imageFile, normal) {
+
+        var t = THREE.ImageUtils.loadTexture("textures/" + imageFile);
+        var m = THREE.ImageUtils.loadTexture("textures/" + normal);
+        var mat2 = new THREE.MeshPhongMaterial({map: t, normalMap: m});
+        var mesh = new THREE.Mesh(geom, mat2);
+
+		mat2.normalMap.normalScale = 2.0;
+        return mesh;
     }
 
 	function animate() {
@@ -191,32 +269,36 @@
 	}
 
 	function animate_objects(){
-		spheres_pivot.rotation.y += 0.07;
-		mirrorSphere1.rotation.x += 0.4;
-		mirrorSphere2.rotation.z += 0.3;
+		spheres_pivot.rotation.y += 0.02;
 
-		polyhedron1.rotation.x += 0.03
-		polyhedron1.rotation.y += 0.04
+		mirrorSphere1.rotation.y += 0.01;
+
+		mirrorSphere2.rotation.x += 0.01;
+		
+
+		polyhedron1.rotation.x += 0.01
+		sphere2.y += 0.01;
+		sphere3.y += 0.02;
+		sphere4.y += 0.01;
+
+		satelite_pivot.rotation.z += 0.01;
+		satelite_pivot.rotation.y -= 0.01;
+
 	}
 
 	function update()
 	{
-		if ( keyboard.pressed("z") ) 
-		{ 
-			// do something
-		}
-		
+
 		controls.update();
 		stats.update();
 	}
 
 	function render() 
 	{
-		// move the CubeCamera to the position of the object
-		//    that has a reflective surface, "take a picture" in each direction
-		//    and apply it to the surface.
-		// need to hide surface before and after so that it does not
-		//    "get in the way" of the camera
+
+		mirrorCube.visible = false;
+		mirrorCubeCamera.updateCubeMap( renderer, scene );
+		mirrorCube.visible = true;
 
 		mirrorSphere1.visible = false;
 		mirrorSphereCamera1.updateCubeMap( renderer, scene );
@@ -226,10 +308,6 @@
 		mirrorSphere2.visible = false;
 		mirrorSphereCamera2.updateCubeMap( renderer, scene );
 		mirrorSphere2.visible = true;
-
-		//torus.visible = false;
-		//mirrorTorusCamera.updateCubeMap( renderer, scene );
-		//torus.visible = true;
 
 		renderer.render( scene, camera );
 	}
