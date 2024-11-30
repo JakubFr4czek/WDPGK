@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Lab03-05 - pointerlock controls</title>
+		<style>
+			html, body {
+				width: 100%;
+				height: 100%;
+			}
+
+			body {
+				background-color: #ffffff;
+				margin: 0;
+				overflow: hidden;
+				font-family: arial;
+			}
+
+			#blocker {
+
+				position: absolute;
+
+				width: 100%;
+				height: 100%;
+
+				background-color: rgba(0,0,0,0.5);
+
+			}
+
+			#instructions {
+
+				width: 100%;
+				height: 100%;
+
+				display: -webkit-box;
+				display: -moz-box;
+				display: box;
+
+				-webkit-box-orient: horizontal;
+				-moz-box-orient: horizontal;
+				box-orient: horizontal;
+
+				-webkit-box-pack: center;
+				-moz-box-pack: center;
+				box-pack: center;
+
+				-webkit-box-align: center;
+				-moz-box-align: center;
+				box-align: center;
+
+				color: #ffffff;
+				text-align: center;
+
+				cursor: pointer;
+
+			}
+
+		</style>
+	</head>
+	<body>
+		<script src="three.js"></script>
+		<script src="PointerLockControls.js"></script>
+
+		<div id="blocker">
+
+			<div id="instructions">
+				<span style="font-size:40px">Click to play</span>
+				<br />
+				(W, A, S, D = Move, SPACE = Jump, MOUSE = Look around)
+			</div>
+
+		</div>
+
+		<script>
+
+			var camera, scene, renderer;
+			var hud, hudCamera;
+			var geometry, material, mesh;
+			var controls,time = Date.now();
+
+			var textureLoader = new THREE.TextureLoader();
+
+			var objects = [];
+
+			var ray;
+
+
+	
+			var instructions = document.getElementById( 'instructions' );
+
+			// http://www.html5rocks.com/en/tutorials/pointerlock/intro/
+
+			var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
+
+			if ( havePointerLock ) {
+
+				var element = document.body;
+
+				var pointerlockchange = function ( event ) {
+
+					if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
+
+						controls.enabled = true;
+
+
+					} else {
+
+						controls.enabled = false;
+
+						instructions.style.display = '';
+
+					}
+
+				}
+
+				var pointerlockerror = function ( event ) {
+
+					instructions.style.display = '';
+
+				}
+
+				// Hook pointer lock state change events
+				document.addEventListener( 'pointerlockchange', pointerlockchange, false );
+				document.addEventListener( 'mozpointerlockchange', pointerlockchange, false );
+				document.addEventListener( 'webkitpointerlockchange', pointerlockchange, false );
+
+				document.addEventListener( 'pointerlockerror', pointerlockerror, false );
+				document.addEventListener( 'mozpointerlockerror', pointerlockerror, false );
+				document.addEventListener( 'webkitpointerlockerror', pointerlockerror, false );
+
+				instructions.addEventListener( 'click', function ( event ) {
+
+					instructions.style.display = 'none';
+
+					// Ask the browser to lock the pointer
+					element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
+
+					if ( /Firefox/i.test( navigator.userAgent ) ) {
+
+						var fullscreenchange = function ( event ) {
+
+							if ( document.fullscreenElement === element || document.mozFullscreenElement === element || document.mozFullScreenElement === element ) {
+
+								document.removeEventListener( 'fullscreenchange', fullscreenchange );
+								document.removeEventListener( 'mozfullscreenchange', fullscreenchange );
+
+								element.requestPointerLock();
+							}
+
+						}
+
+						document.addEventListener( 'fullscreenchange', fullscreenchange, false );
+						document.addEventListener( 'mozfullscreenchange', fullscreenchange, false );
+
+						element.requestFullscreen = element.requestFullscreen || element.mozRequestFullscreen || element.mozRequestFullScreen || element.webkitRequestFullscreen;
+
+						element.requestFullscreen();
+
+					} else {
+
+						element.requestPointerLock();
+
+					}
+
+				}, false );
+
+			} else {
+
+				instructions.innerHTML = 'Your browser doesn\'t seem to support Pointer Lock API';
+
+			}
+
+			init();
+			animate();
+
+			function get_grass_block(){
+
+				var grassSideTexture = textureLoader.load('assets/minecraft/textures/block/grass_block_side.png');
+				var grassTopTexture = textureLoader.load('assets/minecraft/textures/block/grass_block_top.png')
+
+				grassSideTexture.magFilter = THREE.NearestFilter;
+				grassSideTexture.minFilter = THREE.LinearMipMapLinearFilter;
+
+				grassTopTexture.magFilter = THREE.NearestFilter;
+				grassTopTexture.minFilter = THREE.LinearMipMapLinearFilter;
+				
+				var grassBlock = new THREE.BoxGeometry(20, 20, 20);
+
+				var grassBlockMaterial = [
+					new THREE.MeshLambertMaterial({ map: grassSideTexture }), // front face
+					new THREE.MeshLambertMaterial({ map: grassSideTexture}), // back face
+					new THREE.MeshLambertMaterial({ map: grassTopTexture, color: 0x7bf513 }), // top face
+					new THREE.MeshLambertMaterial({ map: grassTopTexture }), // bottom face
+					new THREE.MeshLambertMaterial({ map: grassSideTexture }), // left face
+					new THREE.MeshLambertMaterial({ map: grassSideTexture })  // right face
+				];
+
+				return new THREE.Mesh(grassBlock, grassBlockMaterial);
+
+
+			}
+
+			function get_log_block(){
+
+				var logSideTexture = textureLoader.load('assets/minecraft/textures/block/oak_log.png');
+				var logTopTexture = textureLoader.load('assets/minecraft/textures/block/oak_log_top.png');
+
+				logSideTexture.magFilter = THREE.NearestFilter;
+				logSideTexture.minFilter = THREE.LinearMipMapLinearFilter;
+
+				logTopTexture.magFilter = THREE.NearestFilter;
+				logTopTexture.minFilter = THREE.LinearMipMapLinearFilter;
+
+				var logBlock = new THREE.BoxGeometry(20, 20, 20);
+
+				var logBlockMaterial = [
+					new THREE.MeshLambertMaterial({ map: logSideTexture }), // front face
+					new THREE.MeshLambertMaterial({ map: logSideTexture}), // back face
+					new THREE.MeshLambertMaterial({ map: logTopTexture }), // top face
+					new THREE.MeshLambertMaterial({ map: logTopTexture }), // bottom face
+					new THREE.MeshLambertMaterial({ map: logSideTexture }), // left face
+					new THREE.MeshLambertMaterial({ map: logSideTexture })  // right face
+				];
+
+				return new THREE.Mesh(logBlock, logBlockMaterial);
+
+			}
+
+			function get_leaves_block(){
+
+				var leavesTexture = textureLoader.load('assets/minecraft/textures/block/oak_leaves.png');
+
+				leavesTexture.magFilter = THREE.NearestFilter;
+				leavesTexture.minFilter = THREE.LinearMipMapLinearFilter;
+
+				var leavesBlock = new THREE.BoxGeometry(20, 20, 20);
+
+				var leavesBlockMaterial = [
+					new THREE.MeshLambertMaterial({ map: leavesTexture, transparent:true, color: 0x7bf513  }), // front face
+					new THREE.MeshLambertMaterial({ map: leavesTexture, transparent:true, color: 0x7bf513 }), // back face
+					new THREE.MeshLambertMaterial({ map: leavesTexture, transparent:true, color: 0x7bf513  }), // top face
+					new THREE.MeshLambertMaterial({ map: leavesTexture, transparent:true, color: 0x7bf513  }), // bottom face
+					new THREE.MeshLambertMaterial({ map: leavesTexture, transparent:true, color: 0x7bf513  }), // left face
+					new THREE.MeshLambertMaterial({ map: leavesTexture, transparent:true, color: 0x7bf513  })  // right face
+				];
+
+				return new THREE.Mesh(leavesBlock, leavesBlockMaterial);
+
+			}
+			
+
+			function get_crafting_block(){
+
+				var tableFront = textureLoader.load('assets/minecraft/textures/block/crafting_table_front.png');
+				var tableSide = textureLoader.load('assets/minecraft/textures/block/crafting_table_side.png');
+				var tableTop = textureLoader.load('assets/minecraft/textures/block/crafting_table_top.png');
+
+				tableFront.magFilter = THREE.NearestFilter;
+				tableFront.minFilter = THREE.LinearMipMapLinearFilter;
+
+				tableSide.magFilter = THREE.NearestFilter;
+				tableSide.minFilter = THREE.LinearMipMapLinearFilter;
+
+				tableTop.magFilter = THREE.NearestFilter;
+				tableTop.minFilter = THREE.LinearMipMapLinearFilter;
+
+				var craftingBlock = new THREE.BoxGeometry(20, 20, 20);
+
+				var craftingBlockMaterial = [
+					new THREE.MeshLambertMaterial({ map: tableFront}), // front face
+					new THREE.MeshLambertMaterial({ map: tableSide}), // back face
+					new THREE.MeshLambertMaterial({ map: tableTop}), // top face
+					new THREE.MeshLambertMaterial({ map: tableTop}), // bottom face
+					new THREE.MeshLambertMaterial({ map: tableSide}), // left face
+					new THREE.MeshLambertMaterial({ map: tableSide})  // right face
+				];
+
+				return new THREE.Mesh(craftingBlock, craftingBlockMaterial);
+
+			}
+
+			function get_furnance_block(){
+
+				var furnanceFront = textureLoader.load('assets/minecraft/textures/block/furnace_front_on.png');
+				var furnanceSide = textureLoader.load('assets/minecraft/textures/block/furnace_side.png');
+				var furnanceTop = textureLoader.load('assets/minecraft/textures/block/furnace_top.png');
+
+				furnanceFront.magFilter = THREE.NearestFilter;
+				furnanceFront.minFilter = THREE.LinearMipMapLinearFilter;
+
+				furnanceSide.magFilter = THREE.NearestFilter;
+				furnanceSide.minFilter = THREE.LinearMipMapLinearFilter;
+
+				furnanceTop.magFilter = THREE.NearestFilter;
+				furnanceTop.minFilter = THREE.LinearMipMapLinearFilter;
+
+				var furnanceBlock = new THREE.BoxGeometry(20, 20, 20);
+
+				var furnanceBlockMaterial = [
+					new THREE.MeshLambertMaterial({ map: furnanceFront}), // front face
+					new THREE.MeshLambertMaterial({ map: furnanceSide}), // back face
+					new THREE.MeshLambertMaterial({ map: furnanceTop}), // top face
+					new THREE.MeshLambertMaterial({ map: furnanceTop}), // bottom face
+					new THREE.MeshLambertMaterial({ map: furnanceSide}), // left face
+					new THREE.MeshLambertMaterial({ map: furnanceSide})  // right face
+				];
+
+				return new THREE.Mesh(furnanceBlock, furnanceBlockMaterial);
+
+			}
+
+			function get_farmland_block(){
+
+				var farmlandSide = textureLoader.load('assets/minecraft/textures/block/dirt.png');
+				var farmlandTop = textureLoader.load('assets/minecraft/textures/block/farmland.png');
+
+				farmlandSide.magFilter = THREE.NearestFilter;
+				farmlandSide.minFilter = THREE.LinearMipMapLinearFilter;
+
+				farmlandTop.magFilter = THREE.NearestFilter;
+				farmlandTop.minFilter = THREE.LinearMipMapLinearFilter;
+
+				var farmlandBlock = new THREE.BoxGeometry(20, 20, 20);
+
+				var farmlandBlockMaterial = [
+					new THREE.MeshLambertMaterial({ map: farmlandSide}), // front face
+					new THREE.MeshLambertMaterial({ map: farmlandSide}), // back face
+					new THREE.MeshLambertMaterial({ map: farmlandTop}), // top face
+					new THREE.MeshLambertMaterial({ map: farmlandSide}), // bottom face
+					new THREE.MeshLambertMaterial({ map: farmlandSide}), // left face
+					new THREE.MeshLambertMaterial({ map: farmlandSide})  // right face
+				];
+
+				return new THREE.Mesh(farmlandBlock, farmlandBlockMaterial);
+
+			}
+
+
+			function spawn_tree(x, y){
+				for(var i = 0; i < 5; i += 1){
+
+					var log = get_log_block()
+					log.position.set(x, (i * 20 )-20, y);
+					scene.add(log);
+					objects.push(log);
+
+				}
+
+				for(var i = 1; i < 5; i += 1){
+
+					for(var j = -1; j < 4; j += 1){
+
+						for(var k = -1; k < 4; k += 1){
+
+							if(
+								(j == -1 && k == -1) ||
+								(j == 3 && k == -1) ||
+								(j == 3 && k == 3) ||
+								(j == -1 && k == 3)
+							) continue
+
+							if(i == 3 && (j == -1 || k == -1 || j == 3 || k == 3)) continue
+
+							if((i == 4) && (j <= 0 || k <= 0 || j >= 2 || k >= 2)) continue
+
+
+							var leaves = get_leaves_block();
+							leaves.position.set(20 * j - 20 + x, 20 * i, 20 * k - 20 + y);
+							scene.add(leaves);
+							objects.push(leaves);
+
+						}
+					}
+
+				}
+			}
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 20000);
+
+				scene = new THREE.Scene();
+				//scene.fog = new THREE.Fog( 0xffffff, 0, 750 );
+
+				var light = new THREE.DirectionalLight( 0xf7eca6, 2 );
+				light.position.set( 1, 1, 1 );
+				scene.add( light );
+
+				var light = new THREE.DirectionalLight( 0xf7eca6, 1 );
+				light.position.set( -1, - 0.5, -1 );
+				scene.add( light );
+
+				controls = new THREE.PointerLockControls( camera );
+				scene.add( controls.getObject() );
+
+				ray = new THREE.Raycaster();
+				ray.ray.direction.set( 0, -1, 0 );
+
+				// floor
+
+				for(i = -3; i < 3; i += 1){
+
+					for(j = -3; j < 3; j += 1){
+
+						if(i < 0 && j < 0)
+							continue
+						var grass = get_grass_block();
+						grass.position.set(20 * i, -40, 20 * j);
+						scene.add(grass);
+						objects.push(grass)
+
+
+					}
+
+				}
+				
+				//objects
+
+				//Tree
+				spawn_tree(-20 * 2, 20);
+
+				var craftingTable = get_crafting_block();
+				craftingTable.position.set(0, -20, -60);
+				craftingTable.rotation.set(0,-(Math.PI / 2),0)
+				scene.add(craftingTable);
+				objects.push(craftingTable);
+
+				var furnance = get_furnance_block();
+				furnance.position.set(20, -20, -60);
+				furnance.rotation.set(0,-(Math.PI / 2),0)
+				scene.add(furnance);
+				objects.push(furnance);
+
+				// SKYBOX
+				var materialArray = [];
+				materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'assets/skybox/px.png' ) }));
+				materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'assets/skybox/nx.png' ) }));
+				materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'assets/skybox/py.png' ) }));
+				materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'assets/skybox/ny.png' ) }));
+				materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'assets/skybox/pz.png' ) }));
+				materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'assets/skybox/nz.png' ) }));
+				for (var i = 0; i < 6; i++)
+				materialArray[i].side = THREE.BackSide;
+				var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
+				var skyboxGeom = new THREE.BoxGeometry( 5000, 5000, 5000, 64, 64, 64 );
+				var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
+				skybox.position.set(0, 0, 0);
+				skybox.rotation.set(0, -Math.PI / 12, 0)
+				scene.add( skybox );	
+
+				
+				/*
+				geometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
+				geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+
+				for ( var i = 0, l = geometry.vertices.length; i < l; i ++ ) {
+
+					var vertex = geometry.vertices[ i ];
+					vertex.x += Math.random() * 20 - 10;
+					vertex.y += Math.random() * 2;
+					vertex.z += Math.random() * 20 - 10;
+
+				}
+
+				for ( var i = 0, l = geometry.faces.length; i < l; i ++ ) {
+
+					var face = geometry.faces[ i ];
+					face.vertexColors[ 0 ] = new THREE.Color().setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+					face.vertexColors[ 1 ] = new THREE.Color().setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+					face.vertexColors[ 2 ] = new THREE.Color().setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+
+				}
+
+				material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
+
+				mesh = new THREE.Mesh( geometry, material );
+				scene.add( mesh );
+				*/
+
+				// objects
+				
+				/*
+				geometry = new THREE.BoxGeometry( 20, 20, 20 );
+
+				for ( var i = 0, l = geometry.faces.length; i < l; i ++ ) {
+
+					var face = geometry.faces[ i ];
+					face.vertexColors[ 0 ] = new THREE.Color().setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+					face.vertexColors[ 1 ] = new THREE.Color().setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+					face.vertexColors[ 2 ] = new THREE.Color().setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+
+				}
+
+				for ( var i = 0; i < 500; i ++ ) {
+
+					material = new THREE.MeshLambertMaterial( { specular: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors } );
+
+					var mesh = new THREE.Mesh( geometry, material );
+					mesh.position.x = Math.floor( Math.random() * 20 - 10 ) * 20;
+					mesh.position.y = Math.floor( Math.random() * 20 ) * 20 + 10;
+					mesh.position.z = Math.floor( Math.random() * 20 - 10 ) * 20;
+					scene.add( mesh );
+
+					material.color.setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+
+					objects.push( mesh );
+
+				}*/
+				
+				// HUD
+
+				var crosshairTexture = new THREE.TextureLoader().load("assets/crosshair/crosshair.png");
+				crosshairTexture.magFilter = THREE.NearestFilter;
+				crosshairTexture.minFilter = THREE.LinearMipMapLinearFilter;
+			    var crosshairGeometry = new THREE.PlaneGeometry(15, 15);
+			    var crosshairMaterial = new THREE.MeshBasicMaterial({map: crosshairTexture, transparent: true});
+			    var crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
+
+				crosshair.scale.set(0.01, 0.01, 0.01);
+
+				//crosshair.position.x = 0.1;
+				//crosshair.position.y = -0.05;
+                //crosshair.position.z = -20;        	
+
+				crosshair.position.x = 0;
+				crosshair.position.y = 0;
+                crosshair.position.z = -1;      
+				crosshair.material.depthTest = false
+
+				camera.add(crosshair);
+				//
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( 0x5dc2fc );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				document.body.appendChild( renderer.domElement );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				//
+
+				controls.isOnObject( false );
+
+				ray.ray.origin.copy( controls.getObject().position );
+				ray.ray.origin.y -= 10;
+
+				var intersections = ray.intersectObjects( objects );
+				if ( intersections.length > 0 ) {
+
+					var distance = intersections[ 0 ].distance;
+
+					if ( distance > 0 && distance < 30 ) {
+
+						controls.isOnObject( true );
+
+					}
+
+				}
+
+				controls.update( Date.now() - time );
+
+				renderer.render( scene, camera );
+
+				time = Date.now();
+
+			}
+
+		</script>
+	</body>
+</html>
