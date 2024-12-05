@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body>
+  
+  <div class="viewport"></div>
+
+  <script src="three.min.js"></script>
+  <script src="physi.js"></script>
+  <script>
+    var container, scene, renderer, camera, light, ball, plane;
+    var WIDTH, HEIGHT, VIEW_ANGLE, ASPECT, NEAR, FAR;
+
+    var clock = new THREE.Clock();
+
+    Physijs.scripts.worker = 'physijs_worker.js';
+    Physijs.scripts.ammo = 'ammo.js';
+
+    container = document.querySelector('.viewport');
+
+    WIDTH = window.innerWidth,
+    HEIGHT = window.innerHeight;
+
+    VIEW_ANGLE = 45,
+    ASPECT = WIDTH / HEIGHT,
+    NEAR = 1,
+    FAR = 10000;
+
+    scene = new Physijs.Scene();
+    scene.setGravity(new THREE.Vector3( 0, -50, 0 ));
+    scene.addEventListener('update', function() {
+      scene.simulate(undefined, 2);
+    });
+
+    renderer = new THREE.WebGLRenderer({
+      antialias: true
+    });
+
+    renderer.setSize(WIDTH, HEIGHT);
+    renderer.shadowMapEnabled = true;
+    renderer.shadowMapSoft = true;
+    renderer.shadowMapType = THREE.PCFShadowMap;
+    renderer.shadowMapAutoUpdate = true;
+
+    container.appendChild(renderer.domElement);
+
+    camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
+
+    camera.position.set(0, 120, 50);
+    camera.lookAt(scene.position);
+    scene.add(camera);
+
+    light = new THREE.DirectionalLight(0xffffff);
+
+    light.position.set(0, 100, 60);
+    light.castShadow = true;
+    light.shadowCameraLeft = -60;
+    light.shadowCameraTop = -60;
+    light.shadowCameraRight = 60;
+    light.shadowCameraBottom = 60;
+    light.shadowCameraNear = 1;
+    light.shadowCameraFar = 1000;
+    light.shadowBias = -.0001
+    light.shadowMapWidth = light.shadowMapHeight = 1024;
+    light.shadowDarkness = .7;
+
+    scene.add(light);
+
+    let boxPositions = [];
+
+    // Pudełka
+    for(var i = -5; i < 6; i += 1){
+      spawnBox(15 * i, 0 , 0);
+      boxPositions.push(15 * i)
+    }
+
+    var randomPos = getRandomInt(0, boxPositions.length - 1);
+    boxPositions.push(boxPositions[randomPos]);
+
+    boxPositions = shuffle(boxPositions);
+    posInBoxPositions = 0;
+
+
+    var completionTimeout = 7;
+
+    setInterval(function(){
+
+      if(posInBoxPositions < boxPositions.length){
+
+      var ball = getBall();
+      ball.position.x = boxPositions[posInBoxPositions] + 2.5;
+      ball.position.z = 2.5
+      ball.position.y = 40
+      scene.add(ball);
+
+      posInBoxPositions += 1;
+
+      }else{
+
+        if(completionTimeout > 0){
+          completionTimeout -= 1;
+
+        }else{
+
+        console.log(scene.children.length);
+
+        var i = 58;
+
+        while(i < scene.children.length){
+          scene.remove(scene.children[i]);
+        }
+
+        posInBoxPositions = 0;
+        completionTimeout = 7;
+
+        boxPositions = shuffle(boxPositions);
+
+        }
+
+
+      }
+
+    }, 300);
+
+
+
+    render();
+    scene.simulate()
+
+    function render() {
+      for (var i = 5; i < scene.children.length - 5; i++) {
+        var obj = scene.children[i];
+
+        if (obj.position.y <= -50) {
+          scene.remove(obj);
+        }
+      }
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(render);
+    }
+
+    function getBoxWall(){
+
+      return new Physijs.BoxMesh(
+        new THREE.CubeGeometry(10, 10, 0.5, 10, 10),
+        Physijs.createMaterial(
+          new THREE.MeshLambertMaterial({
+            color: 0xeeeeee
+          }),
+          .4,
+          .99),
+        0
+    );
+
+    }
+
+    function spawnBox(x, y, z){
+
+      boxWall1 = getBoxWall();
+      boxWall1.position.y = y + 20;
+      boxWall1.position.z = z + 2.5;
+      boxWall1.position.x = x + -2.5;
+      boxWall1.rotation.y = Math.PI/2;
+
+      boxWall2 = getBoxWall();
+      boxWall2.position.y = y + 20;
+      boxWall2.position.x = x + 2.5;
+      boxWall2.position.z = z - 2.5;
+
+      boxWall3 = getBoxWall();
+      boxWall3.position.y = y + 20;
+      boxWall3.position.x = x + 2.5;
+      boxWall3.position.z = z + 7.5;
+      
+      boxWall4 = getBoxWall();
+      boxWall4.position.y = y + 20;
+      boxWall4.position.z = z + 2.5;
+      boxWall4.position.x = x + 7.5;
+      boxWall4.rotation.y = Math.PI/2;
+
+      boxWall5 = getBoxWall();
+      boxWall5.position.y = y + 15;
+      boxWall5.position.z = z + 2.5;
+      boxWall5.position.x = x + 2.5;
+      boxWall5.rotation.x = Math.PI/2;
+
+
+      scene.add(boxWall1);
+      scene.add(boxWall2);
+      scene.add(boxWall3);
+      scene.add(boxWall4);
+      scene.add(boxWall5);
+
+    }
+
+    function getBall(){
+
+      return new Physijs.SphereMesh(
+        new THREE.SphereGeometry(
+          2.5,
+          16,
+          16
+        ),
+        Physijs.createMaterial(
+          new THREE.MeshLambertMaterial({
+            color: 0xff0000,
+            reflectivity: .8
+          }),
+          .4,
+          .40
+        ),
+        1
+      );
+    
+    }
+
+    function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1)); // Losowy indeks od 0 do i
+        [array[i], array[j]] = [array[j], array[i]]; // Zamiana miejscami
+    }
+    return array;
+    }
+
+    function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    
+
+  </script>
+</body>
+</html>
