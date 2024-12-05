@@ -6,12 +6,15 @@
   <link rel="stylesheet" href="/css/main.css" />
 </head>
 <body>
-  
+  <h1 id="container" style="text-align: center; position: absolute; top: 10%; left: 50%; transform: translate(-50%, -50%);">
+    Pigeonhole principle demonstration for 11 boxes and 12 balls
+  </h1>
   <div class="viewport"></div>
-
+  
   <script src="three.min.js"></script>
   <script src="physi.js"></script>
   <script>
+    
     var container, scene, renderer, camera, light, ball, plane;
     var WIDTH, HEIGHT, VIEW_ANGLE, ASPECT, NEAR, FAR;
 
@@ -50,7 +53,7 @@
 
     camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
 
-    camera.position.set(0, 120, 50);
+    camera.position.set(0, 150, 50);
     camera.lookAt(scene.position);
     scene.add(camera);
 
@@ -70,14 +73,16 @@
 
     scene.add(light);
 
-    let boxPositions = [];
+    let boxPositionsRaw = [];
 
     // Pudełka
     for(var i = -5; i < 6; i += 1){
       spawnBox(15 * i, 0 , 0);
-      boxPositions.push(15 * i)
+      boxPositionsRaw.push(15 * i)
     }
 
+    
+    let boxPositions = boxPositionsRaw.slice();
     var randomPos = getRandomInt(0, boxPositions.length - 1);
     boxPositions.push(boxPositions[randomPos]);
 
@@ -117,8 +122,11 @@
         posInBoxPositions = 0;
         completionTimeout = 7;
 
-        boxPositions = shuffle(boxPositions);
+        boxPositions = boxPositionsRaw.slice();
+        var randomPos = getRandomInt(0, boxPositions.length - 1);
+        boxPositions.push(boxPositions[randomPos]);
 
+        boxPositions = shuffle(boxPositions);
         }
 
 
