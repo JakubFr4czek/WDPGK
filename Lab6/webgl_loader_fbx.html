@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - FBX loader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+
+	<body>
+		<div id="info">
+			<a href="http://threejs.org" target="_blank" rel="noopener">three.js</a> - FBXLoader<br />
+			Character and animation from <a href="https://www.mixamo.com/" target="_blank" rel="noopener">Mixamo</a>
+		</div>
+
+		<script src="./build/three.js"></script>
+		<script src="./js/libs/stats.min.js"></script>
+		<script src="./js/controls/OrbitControls.js"></script>
+		<script src="./js/libs/inflate.min.js"></script>
+		<script src="./js/loaders/FBXLoader.js"></script>
+		<script type="module">
+
+			var container, stats, controls;
+			var camera, scene, renderer, light;
+
+			var clock = new THREE.Clock();
+
+			var obj1, obj2;
+			var mixer1, mixer2;
+			var loaded_animations = 0;
+
+
+			let animation1_name = ['models/fbx/Draw Sword 2.fbx', 'models/fbx/Sword And Shield Slash.fbx', 'models/fbx/Sword And Shield Block 2.fbx', 'models/fbx/Standing React Death Backward.fbx']
+			let actions1 = [null];
+
+			let animation2_name = ['models/fbx/Draw Sword 2.fbx', 'models/fbx/Sword And Shield Block.fbx', 'models/fbx/Sword And Shield Slash 2.fbx', 'models/fbx/Sword And Shield Slash 2.fbx']
+			let actions2 = [null];
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 20000 );
+				camera.position.set(300, 200, 200);  // Adjust the Z-axis to move the camera further out if necessary
+
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xa0a0a0 );
+				scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+
+				light = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+				light.position.set( 0, 200, 0 );
+				scene.add( light );
+
+				light = new THREE.DirectionalLight( 0xffffff, 1.5 );
+				light.position.set( 0, 1000, 0 );
+				light.castShadow = true;
+				light.shadow.camera.top = 180;
+				light.shadow.camera.bottom = - 100;
+				light.shadow.camera.left = - 120;
+				light.shadow.camera.right = 120;
+				scene.add( light );
+
+				light = new THREE.AmbientLight( 0xffffff, 5); // soft white light
+				scene.add( light );
+
+				// ground
+				var mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x000, depthWrite: false } ) );
+				mesh.rotation.x = - Math.PI / 2;
+				mesh.receiveShadow = true;
+				scene.add( mesh );
+
+				var grid = new THREE.GridHelper( 2000, 20, 0x000000, 0x000000 );
+				grid.material.opacity = 0.2;
+				grid.material.transparent = true;
+				scene.add( grid );
+
+				// model
+
+				var loader = new THREE.FBXLoader();
+				loader.load('models/fbx/Paladin WProp J Nordstrom.fbx', function ( object ) {
+
+					mixer1 = new THREE.AnimationMixer( object );
+
+					mixer1.addEventListener( 'finished', animate_knight1);
+
+					object.traverse( function ( child ) {
+
+						if ( child.isMesh ) {
+
+							child.castShadow = true;
+							child.receiveShadow = true;
+
+						}
+
+					} );
+
+					/*object.traverse((child) => {
+						console.log(child.name);
+					});*/
+
+					const sword = object.getObjectByName('mixamorigSword_joint'); // Replace with the actual name
+					const shield = object.getObjectByName('mixamorigShield_joint'); // Replace with the actual name
+
+					if (sword) {
+						sword.rotation.set(0, Math.PI / 2, 0); // Flip 180° along the Y-axis
+					}
+
+					if (shield) {
+						shield.rotation.set(Math.PI / 2, -Math.PI / 2, Math.PI); // Flip 180° along the Y-axis
+					}
+
+					object.position.z -= 100;
+					scene.add( object );
+
+
+					obj1 = object;
+
+				} );
+
+				var loader = new THREE.FBXLoader();
+				loader.load('models/fbx/Paladin WProp J Nordstrom.fbx', function ( object ) {
+
+					mixer2 = new THREE.AnimationMixer( object );
+
+					mixer2.addEventListener('finished', animate_knight2);
+
+					object.traverse( function ( child ) {
+
+						if ( child.isMesh ) {
+
+							child.castShadow = true;
+							child.receiveShadow = true;
+
+						}
+
+					} );
+
+					/*object.traverse((child) => {
+						console.log(child.name);
+					});*/
+
+					const sword = object.getObjectByName('mixamorigSword_joint'); // Replace with the actual name
+					const shield = object.getObjectByName('mixamorigShield_joint'); // Replace with the actual name
+
+					if (sword) {
+						sword.rotation.set(0, Math.PI / 2, 0); // Flip 180° along the Y-axis
+					}
+
+					if (shield) {
+						shield.rotation.set(Math.PI / 2, -Math.PI / 2, Math.PI); // Flip 180° along the Y-axis
+					}
+
+					object.rotation.y += Math.PI;
+					object.position.z += 100;
+
+					scene.add( object );
+
+					obj2 = object;
+
+				} );
+
+
+				for(let i = 0; i < animation1_name.length; i+=1){
+
+					loader.load(animation1_name[i], function ( object ) {
+
+						actions1[i] = mixer1.clipAction( object.animations[ 0 ] );
+						actions1[i].name = toString(i) + "1";
+						loaded_animations += 1;
+	
+					} );
+
+				}
+
+				for(let i = 0; i < animation2_name.length; i+=1){
+
+					loader.load(animation2_name[i], function ( object ) {
+
+						actions2[i] = mixer2.clipAction( object.animations[ 0 ] );
+						actions2[i].name = toString(i) + "2";
+						loaded_animations += 1;
+	
+					} );
+
+				}
+
+				//actions[0].play();
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.shadowMap.enabled = true;
+				container.appendChild( renderer.domElement );
+
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.target.set( 0, 100, 0 );
+				controls.update();
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				// stats
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+			let current_animation1 = 0;
+			let current_animation2 = 0;
+
+			function animate_knight1(e){
+
+				if (!actions1[0].isRunning() && current_animation1 == 0) {
+					actions1[0].timeScale = 0.3;
+					actions1[0].setLoop(THREE.LoopOnce, 1);
+					actions1[0].clampWhenFinished = true;
+					actions1[0].play();
+					current_animation1 = 1;
+				
+				}else if(!actions1[0].isRunning() && !actions1[1].isRunning() && current_animation1 == 1){
+					actions1[1].timeScale = 0.3;
+					actions1[1].setLoop(THREE.LoopOnce, 1);
+					actions1[1].clampWhenFinished = true;
+					actions1[0].stop();
+					actions1[1].play();
+					current_animation1 = 2;
+
+				}else if(!actions1[1].isRunning() && !actions1[2].isRunning() && current_animation1 == 2){
+					actions1[2].timeScale = -0.3;
+					actions1[2].setLoop(THREE.LoopPingPong, 2);
+					actions1[2].clampWhenFinished = true;
+					actions1[1].stop();
+					actions1[2].play();
+					current_animation1 = 3;
+				}else if(!actions1[2].isRunning() && !actions1[3].isRunning() && current_animation1 == 3){
+					actions1[3].timeScale = 0.3;
+					actions1[3].setLoop(THREE.LoopOnce, 1);
+					actions1[3].clampWhenFinished = true;
+					actions2[2].stop();
+					actions1[3].play();
+					current_animation1 = 4;
+				}
+
+			}
+
+			function animate_knight2(e){
+
+
+				if (!actions2[0].isRunning() && current_animation2 == 0) {
+					actions2[0].timeScale = 0.3;
+					actions2[0].setLoop(THREE.LoopOnce, 1);
+					actions2[0].clampWhenFinished = true;
+					actions2[0].play();
+					current_animation2 = 1;
+				}else if(!actions2[0].isRunning() && !actions2[1].isRunning() && current_animation2 == 1){
+					actions2[1].timeScale = 0.3;
+					actions2[1].setLoop(THREE.LoopPingPong, 2);
+					actions2[1].clampWhenFinished = true;
+					actions2[0].stop();
+					actions2[1].play();
+					current_animation2 = 2;
+				}else if(!actions2[1].isRunning() && !actions2[2].isRunning() && current_animation2 == 2){
+					actions2[2].timeScale = 0.3;
+					actions2[2].setLoop(THREE.LoopOnce, 1);
+					actions2[2].clampWhenFinished = true;
+					actions2[1].stop()
+					actions2[2].play();
+					current_animation2 = 3;
+				}
+				else if(!actions2[2].isRunning() && !actions2[3].isRunning() && current_animation2 == 3){
+					actions2[3].timeScale = 0.3;
+					actions2[3].setLoop(THREE.LoopOnce, 1);
+					actions2[3].clampWhenFinished = true;
+					actions2[2].stop();
+					actions2[3].play();
+					current_animation2 = 4;
+				}
+			}
+
+			const knight_animation_start = {
+				type: 'finished',
+				action: null 
+			};
+			let started = false;
+
+			function animate() {
+				requestAnimationFrame(animate);
+			
+				var delta = clock.getDelta();
+			
+				if (mixer1 && obj1 && mixer2 && obj2) {
+					if (loaded_animations == (animation1_name.length + animation2_name.length)) {
+						if(!started){
+							mixer1.dispatchEvent(knight_animation_start);
+							mixer2.dispatchEvent(knight_animation_start);
+							started = true;
+						}
+					}
+				}
+				
+				if (mixer1) mixer1.update(delta);
+				if (mixer2) mixer2.update(delta);
+
+				renderer.render(scene, camera);
+				stats.update();
+			}
+			
+
+		</script>
+
+	</body>
+</html>
